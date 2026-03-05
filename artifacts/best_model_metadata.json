@@ -1,0 +1,25 @@
+{
+  "winner_experiment": "E01_Preproc_TFIDF_ComplementNB",
+  "best_params": {
+    "tfidf__sublinear_tf": true,
+    "tfidf__ngram_range": [
+      1,
+      2
+    ],
+    "tfidf__min_df": 2,
+    "prep__stem": false,
+    "prep__remove_stopwords": true,
+    "prep__lemmatize": true,
+    "clf__alpha": 0.3
+  },
+  "n_candidates": 8,
+  "val_f1_macro": 0.8411139092543181,
+  "test_f1_macro": 0.8611232647763376,
+  "seed": 42,
+  "train_size": 6758,
+  "val_size": 1449,
+  "test_size": 1449,
+  "hf_experiments_enabled": true,
+  "hf_device": "mps",
+  "model_saved_joblib": true
+}

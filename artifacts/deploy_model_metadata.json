@@ -1,0 +1,22 @@
+{
+  "winner_experiment": "E01_Preproc_TFIDF_ComplementNB",
+  "best_params": {
+    "tfidf__sublinear_tf": true,
+    "tfidf__ngram_range": [
+      1,
+      2
+    ],
+    "tfidf__min_df": 2,
+    "prep__stem": false,
+    "prep__remove_stopwords": true,
+    "prep__lemmatize": true,
+    "clf__alpha": 0.3
+  },
+  "source_metadata": "/Users/adrianalarcon/Library/CloudStorage/OneDrive-UniversidaddelosAndes/MAIA/aprendizaje_no_supervisado/assignment_2/artifacts/best_model_metadata.json",
+  "reconstructed_pipeline": true,
+  "random_state": 42,
+  "sample_size": 9656,
+  "hf_device": "cpu",
+  "refit_on_train_val": true,
+  "timestamp_utc": "2026-03-05T22:42:28.708651+00:00"
+}
