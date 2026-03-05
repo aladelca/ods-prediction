@@ -2,19 +2,27 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
-import hashlib
 from pathlib import Path
 
 import numpy as np
-import nltk
-import spacy
-from gensim.models import FastText, Word2Vec
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
-from sentence_transformers import SentenceTransformer
 from sklearn.base import BaseEstimator, TransformerMixin
+
+try:
+    import nltk
+    from nltk.corpus import stopwords
+    from nltk.stem import SnowballStemmer
+except Exception:  # pragma: no cover - optional at import time
+    nltk = None
+    stopwords = None
+    SnowballStemmer = None
+
+try:
+    import spacy
+except Exception:  # pragma: no cover - optional at import time
+    spacy = None
 
 
 class TextPreprocessor(BaseEstimator, TransformerMixin):
@@ -43,6 +51,11 @@ class TextPreprocessor(BaseEstimator, TransformerMixin):
         self.nltk_data_dir = nltk_data_dir
 
     def fit(self, X, y=None):  # noqa: N803
+        if nltk is None or stopwords is None or SnowballStemmer is None:
+            raise ImportError(
+                "nltk is required for TextPreprocessor.fit. Install with: pip install nltk"
+            )
+
         data_dir = Path(self.nltk_data_dir).resolve()
         data_dir.mkdir(parents=True, exist_ok=True)
         if str(data_dir) not in nltk.data.path:
@@ -53,6 +66,10 @@ class TextPreprocessor(BaseEstimator, TransformerMixin):
         self._stemmer = SnowballStemmer(self.stopword_language)
 
         if self.lemmatize:
+            if spacy is None:
+                raise ImportError(
+                    "spacy is required when lemmatize=True. Install with: pip install spacy"
+                )
             try:
                 self._nlp = spacy.load(self.spacy_model_name, disable=["parser", "ner"])
             except OSError:
@@ -121,6 +138,13 @@ class MeanGensimEmbeddingTransformer(BaseEstimator, TransformerMixin):
         self.seed = seed
 
     def fit(self, X, y=None):  # noqa: N803
+        try:
+            from gensim.models import FastText, Word2Vec
+        except Exception as exc:  # pragma: no cover - optional dependency
+            raise ImportError(
+                "gensim is required for MeanGensimEmbeddingTransformer. Install with: pip install gensim"
+            ) from exc
+
         tokenized = [str(x).split() for x in X]
         if self.method == "fasttext":
             self.model_ = FastText(
@@ -174,6 +198,14 @@ class HFEmbeddingTransformer(BaseEstimator, TransformerMixin):
         self.cache_dir = cache_dir
 
     def fit(self, X, y=None):  # noqa: N803
+        try:
+            from sentence_transformers import SentenceTransformer
+        except Exception as exc:  # pragma: no cover - optional dependency
+            raise ImportError(
+                "sentence-transformers is required for HFEmbeddingTransformer. "
+                "Install with: pip install sentence-transformers"
+            ) from exc
+
         self.model_ = SentenceTransformer(self.model_name, device=self.device)
         return self
 
@@ -198,6 +230,13 @@ class HFEmbeddingTransformer(BaseEstimator, TransformerMixin):
                 return np.load(cache_path).astype(np.float32)
 
         if not hasattr(self, "model_"):
+            try:
+                from sentence_transformers import SentenceTransformer
+            except Exception as exc:  # pragma: no cover - optional dependency
+                raise ImportError(
+                    "sentence-transformers is required for HFEmbeddingTransformer. "
+                    "Install with: pip install sentence-transformers"
+                ) from exc
             self.model_ = SentenceTransformer(self.model_name, device=self.device)
 
         emb = self.model_.encode(

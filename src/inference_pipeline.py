@@ -9,17 +9,11 @@ from typing import Any
 import joblib
 import numpy as np
 
-# Imports required for unpickling pipeline steps.
 from src.config import (
     BEST_METADATA_PATH,
     BEST_MODEL_PATH,
     DEPLOY_METADATA_PATH,
     DEPLOY_MODEL_PATH,
-)
-from src.text_features import (  # noqa: F401
-    HFEmbeddingTransformer,
-    MeanGensimEmbeddingTransformer,
-    TextPreprocessor,
 )
 
 
@@ -35,11 +29,36 @@ def _candidate_artifacts(prefer_deploy: bool) -> list[tuple[Any, Any]]:
     ]
 
 
+def _register_transformers_for_unpickle(metadata: dict[str, Any]) -> None:
+    """Load only transformer classes required by the selected winner artifact."""
+    winner = str(metadata.get("winner_experiment", ""))
+    if not winner:
+        # Safe fallback if metadata is incomplete.
+        from src.text_features import (  # noqa: F401
+            HFEmbeddingTransformer,
+            MeanGensimEmbeddingTransformer,
+            TextPreprocessor,
+        )
+        return
+
+    if "HF" in winner:
+        from src.text_features import HFEmbeddingTransformer, TextPreprocessor  # noqa: F401
+        return
+
+    if "Word2Vec" in winner or "FastText" in winner:
+        from src.text_features import MeanGensimEmbeddingTransformer, TextPreprocessor  # noqa: F401
+        return
+
+    # TF-IDF / dimensionality-reduction pipelines only need text preprocessing class.
+    from src.text_features import TextPreprocessor  # noqa: F401
+
+
 def load_artifacts(prefer_deploy: bool = True) -> tuple[Any, dict[str, Any]]:
     for model_path, metadata_path in _candidate_artifacts(prefer_deploy):
         if model_path.exists() and metadata_path.exists():
-            model = joblib.load(model_path)
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            _register_transformers_for_unpickle(metadata)
+            model = joblib.load(model_path)
             metadata["artifact_model_path"] = str(model_path)
             metadata["artifact_metadata_path"] = str(metadata_path)
             return model, metadata
